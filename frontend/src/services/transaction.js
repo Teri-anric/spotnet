@@ -50,6 +50,67 @@ export async function sendTransaction(loopLiquidityData, contractAddress) {
     throw error;
   }
 }
+
+export async function sendExtraDepositTransaction(extraDepositData, contractAddress) {
+  try {
+    const wallet = await getWallet();
+    const userContractAddress = contractAddress;
+
+    // Prepare approve calldata
+    const approveCalldata = new CallData(erc20abi);
+    const token = extraDepositData.deposit_data.token;
+    const amount = extraDepositData.deposit_data.amount;
+
+    const compiledApproveCalldata = approveCalldata.compile('approve', [
+      userContractAddress, 
+      amount
+    ]);
+
+    // Prepare extra deposit calldata
+    const extraDepositCalldata = new CallData(abi);
+    const compiledExtraDepositCalldata = extraDepositCalldata.compile('extra_deposit', [
+      token, 
+      amount
+    ]);
+
+    // Prepare transactions
+    const approveTransaction = {
+      contractAddress: token,
+      entrypoint: 'approve', 
+      calldata: compiledApproveCalldata
+    };
+
+    const extraDepositTransaction = {  
+      contractAddress: userContractAddress,
+      entrypoint: 'extra_deposit',
+      calldata: compiledExtraDepositCalldata
+    };
+
+    // Execute transactions
+    const result = await wallet.account.execute([
+      approveTransaction, 
+      extraDepositTransaction
+    ]);
+
+    // Notify user
+    notify(
+      ToastWithLink(
+        'Extra Deposit Transaction successfully sent',
+        `https://starkscan.co/tx/${result.transaction_hash}`,
+        'Transaction ID'
+      ),
+      'success'
+    );
+
+    return {
+      transaction_hash: result.transaction_hash,
+    };
+  } catch (error) {
+    console.error('Error sending extra deposit transaction:', error);
+    throw error;
+  }
+}
+
 /* eslint-disable-next-line no-unused-vars */
 async function waitForTransaction(txHash) {
   const wallet = await getWallet();
