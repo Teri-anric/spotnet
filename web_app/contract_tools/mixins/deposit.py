@@ -18,6 +18,20 @@ class DepositMixin:
     """
 
     @classmethod
+    async def add_extra_deposit(cls, contract_address: str, token_symbol: str, amount: str) -> dict:
+        """
+        Adds extra deposit to position.
+        :param contract_address: The contract address.
+        :param token_symbol: The token symbol.
+        :param amount: The amount to deposit.
+        """
+        token_address = TokenParams.get_token_address(token_symbol)
+        decimal = TokenParams.get_token_decimals(token_address)
+        amount = int(Decimal(amount) * 10**decimal)
+        
+        return await CLIENT.add_extra_deposit(contract_address, token_address, amount)
+
+    @classmethod
     async def get_transaction_data(
         cls,
         deposit_token: str,

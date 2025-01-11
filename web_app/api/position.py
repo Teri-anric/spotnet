@@ -21,7 +21,7 @@ from web_app.api.serializers.transaction import (
 from web_app.contract_tools.constants import TokenMultipliers, TokenParams
 from web_app.contract_tools.mixins import DashboardMixin, DepositMixin, PositionMixin
 from web_app.db.crud import PositionDBConnector, TransactionDBConnector
-from web_app.db.models import TransactionStatus
+from web_app.db.models import TransactionStatus, User
 
 router = APIRouter()  # Initialize the router
 position_db_connector = PositionDBConnector()  # Initialize the PositionDBConnector
@@ -216,24 +216,19 @@ async def add_extra_deposit(position_id: UUID, data: AddPositionDepositData):
     """
     if not data.amount:
         raise HTTPException(status_code=400, detail="Amount is required")
+    
+    if not data.token_symbol:
+        raise HTTPException(status_code=400, detail="Token symbol is required")
 
     position = position_db_connector.get_position_by_id(position_id)
     if not position:
         raise HTTPException(status_code=404, detail="Position not found")
-    
-    if position.token_symbol != data.token_symbol:
-        raise HTTPException(status_code=400, detail="Token symbol does not match")
-    
+
+    user = position_db_connector.get_object(User, position.user_id)
     try:
-        position_db_connector.add_extra_deposit_to_position(position, data.amount)
-        
-        # Save transaction if transaction_hash is provided
-        if data.transaction_hash:
-            transaction_db_connector.create_transaction(
-                position_id,
-                data.transaction_hash,
-                status=TransactionStatus.EXTRA_DEPOSIT.value
-            )
+        await DepositMixin.add_extra_deposit(user.contract_address, data.token_symbol, data.amount)
+
+        position_db_connector.add_extra_deposit_to_position(position, data.amount)        
     except InvalidOperation:
         raise HTTPException(status_code=400, detail="Amount is not a number")
     
