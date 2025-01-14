@@ -55,7 +55,17 @@ export const connectWallet = async () => {
     const { wallet } = await connect({
       // include: ['argentX', 'braavos'],
       modalMode: "alwaysAsk",
-      modalTheme: "light",
+      modalTheme: "dark",
+      dappName: "Spotnet",
+      webWalletUrl: "https://spotnet.onrender.com",
+      dappIcon: "https://spotnet.onrender.com/logo192.png",
+      argentMobileOptions: {
+        theme: "dark",
+        dappName: "Spotnet",
+        url: "https://spotnet.onrender.com",
+        icons: ["https://spotnet.onrender.com/logo192.png"],
+        description: "Spotnet is a decentralized exchange for the Starknet network.",
+      }
     });
 
     if (!wallet) {
